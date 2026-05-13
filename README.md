@@ -5,7 +5,7 @@ This project generates a custom Raspberry Pi OS image for a RPi Zero 2 W that in
 ## Usage
 
 1. Go into the Releases and download the latest image.
-2. Flash it using Balena Etcher or Raspberry Pi Imager.
+2. Flash it using BalenaEtcher or Raspberry Pi Imager.
 3. Boot your Raspberry Pi, plug a Nintendo Switch in RCM mode into the OTG USB port, and enjoy!
 
 ## Building & Continuous Delivery
