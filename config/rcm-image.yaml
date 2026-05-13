@@ -1,6 +1,6 @@
 device:
   layer: rpizero2w
-  user1pass: raspberry
+  user1passhash: '$6$LC/akTfJOr451USD$IGaeArMZ7fKSDF44Z0qIAQj8Etd9QoaZyheb6MgcaFdXSjspirQp2nmctG2nlikMXgXYU/XzL9rflPOxFwQfp1'
 
 layer:
   custom: rcm-injector
