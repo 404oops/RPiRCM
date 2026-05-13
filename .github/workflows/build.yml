@@ -7,6 +7,9 @@ on:
   schedule:
     - cron: '0 * * * *' # Check hourly for updates
 
+permissions:
+  contents: write
+
 jobs:
   check_and_build:
     runs-on: ubuntu-24.04-arm
@@ -71,6 +74,8 @@ jobs:
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: "RPiRCM - Hekate ${{ env.HEKATE_LATEST }}"
-          files: rpi-image-gen/work/image-rpi-rcm-injector/rpi-rcm-injector.img.xz
+          files: |
+            rpi-image-gen/work/**/*.img.xz
+            rpi-image-gen/work/**/*.img
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
