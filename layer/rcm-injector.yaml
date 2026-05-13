@@ -3,7 +3,14 @@
 # X-Env-Layer-Category: custom
 # X-Env-Layer-Desc: RCM Injector Daemon that builds fusee-nano and runs a payload injector
 # X-Env-Layer-Version: 1.0.0
-# X-Env-Layer-Requires: rpi-essential-base
+# X-Env-Layer-Requires: debian-bookworm-arm64-multi,
+#  rpi-debian-bookworm,
+#  rpi-misc-utils,
+#  rpi-essential-base,
+#  rpi-misc-skel,
+#  rpi-user-credentials,
+#  systemd-net-min,
+#  fake-hwclock
 # METAEND
 ---
 mmdebstrap:
