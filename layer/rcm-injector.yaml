@@ -1,0 +1,22 @@
+# METABEGIN
+# X-Env-Layer-Name: rcm-injector
+# X-Env-Layer-Category: custom
+# X-Env-Layer-Desc: RCM Injector Daemon that builds fusee-nano and runs a payload injector
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Requires: rpi-essential-base
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - systemd
+  customize-hooks:
+    # Copy pre-built fusee-nano, payload, daemon script, and systemd service into place
+    - mkdir -p "$1/opt/rcm"
+    - cp "PROJECT_ROOT_PLACEHOLDER/fusee-nano" "$1/opt/rcm/"
+    - cp "PROJECT_ROOT_PLACEHOLDER/payload.bin" "$1/opt/rcm/"
+    - cp "PROJECT_ROOT_PLACEHOLDER/daemon/rcm-daemon.sh" "$1/opt/rcm/"
+    - chmod +x "$1/opt/rcm/rcm-daemon.sh"
+    - cp "PROJECT_ROOT_PLACEHOLDER/daemon/rcm.service" "$1/etc/systemd/system/"
+    
+    # Enable the systemd service for boot
+    - chroot "$1" systemctl enable rcm.service

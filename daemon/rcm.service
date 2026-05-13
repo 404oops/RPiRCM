@@ -1,0 +1,13 @@
+[Unit]
+Description=Nintendo Switch RCM Injector Daemon
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/opt/rcm/rcm-daemon.sh
+Restart=always
+User=root
+WorkingDirectory=/opt/rcm
+
+[Install]
+WantedBy=multi-user.target

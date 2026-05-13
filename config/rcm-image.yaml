@@ -1,0 +1,12 @@
+device:
+  layer: zero2w
+  user1pass: raspberry
+
+layer:
+  custom: rcm-injector
+
+image:
+  layer: image-rpios
+  name: rpi-rcm-injector
+  compression: xz
+  root_part_size: 2000M
