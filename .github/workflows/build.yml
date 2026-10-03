@@ -3,6 +3,8 @@ name: Build RPi RCM Image
 on:
   push:
     branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
   workflow_dispatch:
   schedule:
     - cron: '0 * * * *' # Check hourly for updates
@@ -16,18 +18,41 @@ jobs:
     steps:
       - name: Check latest releases
         id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          HEKATE_LATEST=$(curl -s https://api.github.com/repos/CTCaer/hekate/releases/latest | jq -r .tag_name)
-          FUSEE_LATEST=$(git ls-remote https://github.com/DefenderOfHyrule/fusee-nano.git HEAD | awk '{print substr($1,1,7)}')
-          TAG_NAME="${HEKATE_LATEST}-${FUSEE_LATEST}"
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
-          echo "HEKATE_LATEST=$HEKATE_LATEST" >> $GITHUB_ENV
-          
-          if env GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} gh release view "$TAG_NAME" -R ${{ github.repository }} &>/dev/null; then
-            echo "Release $TAG_NAME already exists. Skipping build."
-            echo "skip=true" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          HEKATE_RELEASE=$(gh api repos/CTCaer/hekate/releases/latest)
+          HEKATE_LATEST=$(jq -er '.tag_name | select(type == "string") | select(test("^v[0-9]+[.][0-9]+[.][0-9]+$"))' <<< "$HEKATE_RELEASE")
+          HEKATE_URL=$(jq -er --arg version "${HEKATE_LATEST#v}" '
+            [.assets[] | select(.name == ("hekate_ctcaer_" + $version + ".bin")) | .browser_download_url]
+            | select(length == 1) | .[0]
+            | select(type == "string")
+            | select(startswith("https://github.com/CTCaer/hekate/releases/download/"))
+          ' <<< "$HEKATE_RELEASE")
+          FUSEE_COMMIT=$(git ls-remote https://github.com/DefenderOfHyrule/fusee-nano.git HEAD | awk '{print $1}')
+          [[ "$FUSEE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid fusee-nano commit" >&2; exit 1; }
+          TAG_NAME="${HEKATE_LATEST}-${FUSEE_COMMIT:0:7}"
+          {
+            echo "TAG_NAME=$TAG_NAME"
+            echo "HEKATE_LATEST=$HEKATE_LATEST"
+            echo "HEKATE_URL=$HEKATE_URL"
+            echo "FUSEE_COMMIT=$FUSEE_COMMIT"
+          } >> "$GITHUB_ENV"
+
+          # PRs always exercise the build, even if this release already exists.
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           else
-            echo "skip=false" >> $GITHUB_OUTPUT
+            RELEASES=$(gh api --paginate --slurp "repos/$REPOSITORY/releases")
+            if jq -e --arg tag "$TAG_NAME" 'any(.[][]; .tag_name == $tag)' <<< "$RELEASES" >/dev/null; then
+              echo "Release $TAG_NAME already exists. Skipping build."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "skip=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Checkout code
@@ -40,6 +65,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y build-essential xxd jq curl wget
           git clone https://github.com/DefenderOfHyrule/fusee-nano.git fusee-nano-src
           cd fusee-nano-src
+          git checkout --detach "$FUSEE_COMMIT"
           make
           cp fusee-nano ../
           cd ..
@@ -47,14 +73,16 @@ jobs:
       - name: Download latest Hekate payload
         if: steps.check.outputs.skip == 'false'
         run: |
-          HEKATE_URL=$(curl -s https://api.github.com/repos/CTCaer/hekate/releases/latest | jq -r '.assets[] | select(.name | test("^hekate_ctcaer_[0-9.]+\\.bin$")) | .browser_download_url')
-          wget -O payload.bin $HEKATE_URL
+          curl --fail --location --retry 3 --output payload.bin "$HEKATE_URL"
+          test -s payload.bin
 
       - name: Prepare rpi-image-gen
         if: steps.check.outputs.skip == 'false'
         run: |
           git clone https://github.com/raspberrypi/rpi-image-gen.git
           cd rpi-image-gen
+          # rpi-image-gen v2.8.0: update deliberately alongside the image config.
+          git checkout --detach 262d4df5a9f9d4133370465399a7958a7c22cdc7
           sudo ./install_deps.sh
 
       - name: Build custom image
@@ -75,11 +103,12 @@ jobs:
           xz -z -T0 rpi-image-gen/work/image-rpi-rcm-injector/rpi-rcm-injector.img
 
       - name: Create Release
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.skip == 'false' && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: "RPiRCM - Hekate ${{ env.HEKATE_LATEST }}"
+          fail_on_unmatched_files: true
           files: |
             rpi-image-gen/work/**/*.img.xz
         env:

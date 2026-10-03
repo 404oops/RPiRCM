@@ -8,7 +8,7 @@
 #  rpi-misc-utils,
 #  rpi-essential-base,
 #  rpi-misc-skel,
-#  rpi-user-credentials,
+#  device-user-admin,
 #  systemd-net-min,
 #  fake-hwclock
 # METAEND

@@ -13,6 +13,6 @@ This project generates a custom Raspberry Pi OS image for a RPi Zero 2 W that in
 1. The `.github/workflows/build.yml` runs automatically on an hourly cron schedule.
 2. It fetches the latest release tag from `CTCaer/hekate` and the latest commit hash from `DefenderOfHyrule/fusee-nano`.
 3. If a GitHub Release for that exact combination doesn't exist yet, it builds a new one automatically.
-4. During the build, it pulls the official `raspberrypi/rpi-image-gen` builder on an `ubuntu-24.04-arm` runner.
+4. During the build, it pulls the official `raspberrypi/rpi-image-gen` builder pinned to v2.8.0 (`262d4df5a9f9d4133370465399a7958a7c22cdc7`) on an `ubuntu-24.04-arm` runner.
 5. It compiles `fusee-nano` natively, securely pulls the Hekate payload, and uses `config/rcm-image.yaml` to generate the image.
 6. The zero-bloat `.img.xz` is uploaded automatically to the Releases page for you to download.
